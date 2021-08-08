@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/zmb3/spotify"
@@ -31,13 +32,13 @@ func resourcePlaylist() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
-				Description: "Whether the playlist can be accessed publically",
+				Description: "Whether the playlist can be accessed publicly",
 			},
 			"tracks": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Required:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
-				Description: "A set of tracks for the playlist to contain",
+				Description: "An ordered list of tracks for the playlist to contain",
 			},
 			"snapshot_id": {
 				Type:     schema.TypeString,
@@ -67,7 +68,7 @@ func resourcePlaylistCreate(d *schema.ResourceData, m interface{}) error {
 
 	d.SetId(string(playlist.ID))
 
-	trackIDs := spotifyIdsInterface(d.Get("tracks").(*schema.Set).List())
+	trackIDs := spotifyIdsInterface(d.Get("tracks").([]interface{}))
 
 	snapshotID := playlist.SnapshotID
 	for _, rng := range batches(len(trackIDs), 100) {
@@ -141,10 +142,17 @@ func resourcePlaylistUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("tracks") {
 		old, new := d.GetChange("tracks")
-		oldSet := old.(*schema.Set)
-		newSet := new.(*schema.Set)
-		add := spotifyIdsInterface(newSet.Difference(oldSet).List())
-		sub := spotifyIdsInterface(oldSet.Difference(newSet).List())
+		log.Println("[DEBUG] TD", old)
+		log.Println("[DEBUG] TD", new)
+		// oldSet := old.(*schema.Set)
+		// newSet := new.(*schema.Set)
+		oldList := old.([]interface{})
+		newList := new.([]interface{})
+		add := spotifyIdsInterface(difference(newList, oldList))
+		sub := spotifyIdsInterface(difference(oldList, newList))
+
+		// add := spotifyIdsInterface(newSet.Difference(oldSet).List())
+		// sub := spotifyIdsInterface(oldSet.Difference(newSet).List())
 
 		var err error
 		var snapshotID string
