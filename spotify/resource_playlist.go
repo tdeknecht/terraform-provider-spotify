@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/zmb3/spotify"
@@ -139,8 +138,6 @@ func resourcePlaylistUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("tracks") {
 		old, new := d.GetChange("tracks")
-		log.Println("[DEBUG] TD", old)
-		log.Println("[DEBUG] TD", new)
 		// oldSet := old.(*schema.Set)
 		// newSet := new.(*schema.Set)
 		oldList := old.([]interface{})
