@@ -1,22 +1,24 @@
-package main
+package spotify
 
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/zmb3/spotify"
 )
 
 func resourceLibraryTracksCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(*spotify.Client)
 
-	trackIDs := spotifyIdsInterface(d.Get("tracks").([]interface{}))
+	trackIDs := spotifyIdsInterface(d.Get("tracks").(*schema.Set).List())
 
 	for _, rng := range batches(len(trackIDs), 100) {
 		if err := client.AddTracksToLibrary(trackIDs[rng.Start:rng.End]...); err != nil {
 			return fmt.Errorf("AddTracksToLibrary: %w", err)
 		}
 	}
+
+	d.SetId("library")
 
 	return nil
 }
@@ -45,8 +47,6 @@ func resourceLibraryTracksRead(d *schema.ResourceData, m interface{}) error {
 func resourceLibraryTracksUpdate(d *schema.ResourceData, m interface{}) error {
 	client := m.(*spotify.Client)
 
-	d.Partial(true)
-
 	if d.HasChange("tracks") {
 		old, new := d.GetChange("tracks")
 		oldSet := old.(*schema.Set)
@@ -69,12 +69,5 @@ func resourceLibraryTracksUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	d.SetPartial("tracks")
-
-	d.Partial(false)
-	return nil
-}
-
-func resourceLibraryTracksDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
